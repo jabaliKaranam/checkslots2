@@ -1,0 +1,9 @@
+#MODE = 0 if you do not have IFTTT integration
+VACCINE=COVAXIN
+MODE=1
+CENTER_ID_LIST=ALL
+DISTRICT_ID=8
+DOSE=ALL
+IFTTT_WEBHOOK_URL=https://maker.ifttt.com/trigger/found_slot/with/key/dEUoLhK2fSFCrcS8f6gOkxnBVG5vpycDjLVuHfrS2iP
+SCRIPT_LOCATION=D:/PyStuff/checkslots2
+NOTIFICATION_TYPE=IFTTT
