@@ -8,7 +8,9 @@ configs = Properties()
 with open('properties.txt', 'rb') as config_file:
     configs.load(config_file)
 MODE = int(configs.get("MODE").data)
-CENTER_ID_LIST = configs.get("CENTER_ID_LIST").data.split(',')
+CENTER_ID_LIST = configs.get("CENTER_ID_LIST").data
+if(not CENTER_ID_LIST == 'ALL'):
+    CENTER_ID_LIST =CENTER_ID_LIST.split(',')
 DISTRICT_ID = str(configs.get("DISTRICT_ID").data)
 IFTTT_WEBHOOK = str(configs.get("IFTTT_WEBHOOK_URL").data)
 LOG_LOCATION = str(configs.get("SCRIPT_LOCATION").data)
@@ -37,7 +39,6 @@ def main():
         except Exception as e:
             logging.critical("Request Failed!", date)
             #print(e.with_traceback())
-            exit(1)
         centers = json.loads(resp.content.decode("utf-8"))["centers"]
         print(resp.text)
         if len(centers) == 0:
@@ -48,30 +49,37 @@ def main():
                     sessions = center["sessions"]
                     for session in sessions:
                         if session["available_capacity"] > 0:
-                            if session["available_capacity_dose1"] > 0 and (DOSE == '1' or DOSE == 'ALL') and (session["vaccine"] == VACCINE or VACCINE == 'ALL'):
-                                logging.info("Slot available Dose 1 : %s %s", session["available_capacity_dose1"], session)
-                                logging.info("Slot available Dose 2 \n %s", session)
+                            if session["available_capacity_dose1"] > 0 and (DOSE == '1' or DOSE == 'ALL') and (session["vaccine"].upper() == VACCINE or VACCINE == 'ALL'):
+                                print("Slots found ", session["available_capacity_dose1"], session)
+                                logging.info("Slot available Dose 1 on %s \n %s", date, center)
                                 data = {"NOTIFICATION_TYPE": NOTIFICATION_TYPE}
                                 data["center_name"] = str(center["name"])
+                                data["vaccine"] = str(session["vaccine"]).lower()
                                 data["dose"] = str(1)
                                 data["slots"] = str(session["available_capacity_dose2"])
                                 data["date"] = str(date)
                                 notify(data)
-                            if session["available_capacity_dose2"] > 0 and (DOSE == '2' or DOSE == 'ALL') and (session["vaccine"] == VACCINE or VACCINE == 'ALL'):
-                                logging.info("Slot available Dose 2 \n %s", session)
+                                exit()
+                            if session["available_capacity_dose2"] > 0 and (DOSE == '2' or DOSE == 'ALL') and (session["vaccine"].upper() == VACCINE or VACCINE == 'ALL'):
+                                print("Slots found  %s %s", session["available_capacity_dose1"], session)
+                                logging.info("Slot available Dose 2 on %s \n %s", date, center)
                                 data = {"NOTIFICATION_TYPE" : NOTIFICATION_TYPE}
                                 data["center_name"] = str(center["name"])
+                                data["vaccine"] = str(session["vaccine"]).lower()
                                 data["dose"] = str(2)
                                 data["slots"] = str(session["available_capacity_dose2"])
                                 data["date"] = str(date)
                                 notify(data)
+                                exit()
                         else:
-                            logging.info("No Slots on %s" + date + " for center " + data["center_name"])
+                            logging.info("No Slots on " + date + " for center " + center["name"])
 
 def notify(data):
     if data["NOTIFICATION_TYPE"] == "IFTTT":
-        message = data["center_name"] + " has " + data["slots"] + " slots for dose " + data["dose"] + " on " + data["date"]
-        requests.get(IFTTT_WEBHOOK, params={"value1": message})
+        print("Calling webhook")
+        message = data["center_name"] + " has " + data["slots"] + " slots for dose " + data["dose"] + " of " + data["vaccine"] + " on " + data["date"]
+        print(message)
+        #requests.get(IFTTT_WEBHOOK, params={"value1": message})
     elif data["NOTIFICATION_TYPE"] == "EMAIL":
         pass
     elif data["NOTIFICATION_TYPE"] == "SYSTEM":
